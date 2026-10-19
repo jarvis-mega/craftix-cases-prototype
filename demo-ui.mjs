@@ -27,3 +27,18 @@ export function createTopUp({ onGrant, getBalance, tickets = true }) {
     close() { if (dialog.open) dialog.close(); },
   };
 }
+
+// Two-tap reset: no window.confirm (blocked in some in-app browsers, e.g. Telegram WebView).
+export function bindResetButton(button, isBusy, doReset) {
+  const label = button.textContent;
+  let armedUntil = 0, timer = null;
+  const disarm = () => { armedUntil = 0; button.textContent = label; button.classList.remove('armed'); };
+  button.addEventListener('click', () => {
+    if (isBusy()) return;
+    if (Date.now() > armedUntil) {
+      armedUntil = Date.now() + 4000; button.textContent = 'Ещё раз = сброс'; button.classList.add('armed');
+      clearTimeout(timer); timer = setTimeout(disarm, 4000); return;
+    }
+    clearTimeout(timer); disarm(); doReset();
+  });
+}

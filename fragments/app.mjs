@@ -1,4 +1,4 @@
-import { createTopUp } from '../demo-ui.mjs';
+import { createTopUp, bindResetButton } from '../demo-ui.mjs?v=3';
 import { STORAGE_KEY, TARGET, freshState, loadState, saveState, attempt, collect, selectPayment, addResources, setFragments98, forceNextGain, canPay } from './engine.mjs';
 
 const $ = id => document.getElementById(id);
@@ -189,7 +189,7 @@ $('scenario-ordinary').addEventListener('click', () => prepareScenario('ordinary
 $('scenario-big').addEventListener('click', () => prepareScenario('big'));
 $('scenario-threshold').addEventListener('click', () => prepareScenario('threshold'));
 $('scenario-assembly').addEventListener('click', () => prepareScenario('assembly'));
-$('reset-header').addEventListener('click', () => { if (!busy && confirm('Начать демо заново? Баланс, награды и прогресс вернутся к стартовым.')) $('reset-demo').click(); });
+bindResetButton($('reset-header'), () => busy, () => $('reset-demo').click());
 $('reset-demo').addEventListener('click', () => {
   if (busy) return;
   try { storage.removeItem(STORAGE_KEY); state = freshState(); topUp.close(); render('Демо полностью сброшено.'); }

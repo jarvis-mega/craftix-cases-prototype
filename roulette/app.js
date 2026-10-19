@@ -1,4 +1,4 @@
-import { createTopUp } from '../demo-ui.mjs';
+import { createTopUp, bindResetButton } from '../demo-ui.mjs?v=3';
 import {
   PRIZES, COSTS, createState, loadState, saveState, beginSpin, revealSpin,
   nextCost, remainingTotal, probabilities, pauseSet, resumeSet,
@@ -233,7 +233,7 @@ function prepareSet(mode, scenario) {
 $('scenario-new').addEventListener('click', () => prepareSet('random', 'new'));
 $('scenario-grand-first').addEventListener('click', () => prepareSet('g-first', 'first'));
 $('scenario-last').addEventListener('click', () => prepareSet('g-last', 'last'));
-$('reset-header').addEventListener('click', () => { if (!state.pending && confirm('Начать демо заново? Баланс, награды и прогресс вернутся к стартовым.')) $('reset-demo').click(); });
+bindResetButton($('reset-header'), () => !!state.pending, () => $('reset-demo').click());
 $('restart-set').addEventListener('click', () => prepareSet('random', 'new'));
 $('reset-demo').addEventListener('click', () => {
   if (state.pending) return;
