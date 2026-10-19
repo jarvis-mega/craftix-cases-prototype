@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10192c">
+  <title>Craftix — Кейсы · демо</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Craftix, к началу страницы"><span class="brand-mark" aria-hidden="true">◆</span> CRAFTIX <span class="brand-divider">/</span> КЕЙСЫ</a>
+      <span class="demo-pill">БРАУЗЕРНОЕ ДЕМО</span>
+    </header>
+
+    <main id="top">
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy">
+          <p class="eyebrow">СЕЗОН 01 <span class="eyebrow-line"></span> ПРОТОТИП МЕХАНИКИ</p>
+          <h1 id="page-title">Открой свой <em>кейс.</em></h1>
+          <p class="intro-lede">Пять наград, прозрачные шансы и гарантированный главный приз. Один и тот же кейс можно открывать снова — все награды остаются в пуле.</p>
+          <div class="balance-row" aria-label="Ваш баланс">
+            <div class="balance-chip"><span class="balance-icon crystal" aria-hidden="true">◆</span><span><small>КРИСТАЛЛЫ</small><strong id="crystals">2 500</strong></span></div>
+            <div class="balance-chip"><span class="balance-icon ticket" aria-hidden="true">▣</span><span><small>БИЛЕТЫ</small><strong id="tickets">3</strong></span></div>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+          <div class="pixel-star star-one">✦</div><div class="pixel-star star-two">✦</div><div class="pixel-star star-three">✦</div>
+          <div class="case-cube"><div class="cube-front"><span class="cube-emblem">C</span></div><div class="cube-top"></div><div class="cube-side"></div></div>
+          <div class="art-caption">CRAFTIX DROP <span>№ 001</span></div>
+        </div>
+      </section>
+
+      <section class="content-grid" aria-label="Открытие кейса">
+        <div class="main-column">
+          <section class="panel case-panel" aria-labelledby="case-title">
+            <div class="section-heading"><div><p class="eyebrow">ОДИН КЕЙС · БЕЗ ОГРАНИЧЕНИЯ ПОВТОРОВ</p><h2 id="case-title">Кейс «Кубический мир»</h2></div><span class="panel-number">01 / 03</span></div>
+            <div class="reward-grid" id="reward-grid" aria-label="Награды и точные шансы"></div>
+            <div class="pool-note"><span aria-hidden="true">↻</span> Выпавшая награда не удаляется: повторы возможны при каждом открытии.</div>
+          </section>
+
+          <section class="panel opening-panel" aria-labelledby="opening-title">
+            <div class="section-heading"><div><p class="eyebrow">ВЫБЕРИ РЕСУРС</p><h2 id="opening-title">Открыть кейс</h2></div><span class="panel-number">02 / 03</span></div>
+            <fieldset class="payment-fieldset"><legend>Способ оплаты</legend>
+              <label class="payment-choice"><input type="radio" name="payment" value="crystals" checked><span class="payment-art crystal" aria-hidden="true">◆</span><span class="payment-text"><strong>Кристаллы</strong><small>100 за открытие · 1 000 за 10</small></span><span class="choice-check" aria-hidden="true"></span></label>
+              <label class="payment-choice"><input type="radio" name="payment" value="tickets"><span class="payment-art ticket" aria-hidden="true">▣</span><span class="payment-text"><strong>Билеты</strong><small>1 за открытие · 10 за 10</small></span><span class="choice-check" aria-hidden="true"></span></label>
+            </fieldset>
+            <div class="open-actions"><button class="open-button primary" id="open-one" type="button"><span>ОТКРЫТЬ 1</span><small id="price-one">100 ◆</small></button><button class="open-button secondary" id="open-ten" type="button"><span>ОТКРЫТЬ 10</span><small id="price-ten">1 000 ◆</small></button></div>
+            <p class="payment-help" id="payment-help">Оплата только выбранным ресурсом. Если его не хватает, открытие не начнётся.</p>
+            <div class="pity-box"><div class="pity-head"><span class="pity-symbol" aria-hidden="true">✦</span><div><strong id="pity-count">Открытий без G: 0 из 79</strong><p id="pity-remaining">G гарантирован не позднее чем через 80 открытий</p></div></div><div class="pity-track" aria-hidden="true"><span id="pity-progress"></span></div><details class="explanation"><summary>Как работают шансы и гарант</summary><p>Шансы каждого обычного открытия: R1 — 50%, R2 — 30%, R3 — 15%, R4 — 3%, G — 2%. Если G не выпал за 79 открытий подряд, 80-е гарантированно даёт G. Ранний G сразу сбрасывает счётчик. Счётчик общий для кристаллов и билетов. Набор из 10 обрабатывается по порядку: после G счёт начинается заново, поэтому в наборе возможно несколько G.</p></details></div>
+          </section>
+
+          <section class="panel result-panel" aria-labelledby="result-title"><div class="section-heading"><div><p class="eyebrow">ПОСЛЕДНЕЕ ОТКРЫТИЕ</p><h2 id="result-title" tabindex="-1">Результат</h2></div><span class="panel-number">03 / 03</span></div><div id="result-content" class="result-content" aria-live="polite" aria-atomic="true"><p class="empty-state">Здесь появится результат первого открытия.</p></div><button id="skip-animation" class="skip-button" type="button" hidden>Пропустить анимацию →</button></section>
+        </div>
+
+        <aside class="side-column" aria-label="Прогресс и история">
+          <section class="panel inventory-panel" aria-labelledby="inventory-title"><div class="section-heading compact"><div><p class="eyebrow">КОЛЛЕКЦИЯ</p><h2 id="inventory-title">Мои награды</h2></div></div><div id="inventory-list" class="inventory-list"></div></section>
+          <section class="panel history-panel" aria-labelledby="history-title"><div class="section-heading compact"><div><p class="eyebrow">ПОСЛЕДНИЕ 40 ОТКРЫТИЙ</p><h2 id="history-title">История</h2></div></div><div id="history-list" class="history-list"><p class="empty-state">Пока нет открытий.</p></div></section>
+          <details class="panel test-panel"><summary><span><span class="eyebrow">ТОЛЬКО ДЛЯ ПРОВЕРКИ</span><strong>Тестирование</strong></span><span class="test-plus" aria-hidden="true">+</span></summary><div class="test-body"><p>Изменения влияют только на это локальное демо. Реальных платежей и подключения к игре нет.</p><div class="test-actions"><button type="button" id="add-crystals">+10 000 кристаллов</button><button type="button" id="add-tickets">+10 билетов</button><button type="button" id="set-pity">Счётчик → 79</button><button type="button" id="force-g">G в следующем открытии</button><button type="button" id="reset" class="danger-button">Полный сброс демо</button></div><p id="test-status" class="test-status" role="status"></p></div></details>
+        </aside>
+      </section>
+    </main>
+    <footer><span>CRAFTIX / КЕЙСЫ</span><span>Локальный интерактивный прототип · Не связан с оплатой и продакшеном</span></footer>
+  </div>
+</body>
+</html>
