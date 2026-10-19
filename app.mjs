@@ -228,6 +228,7 @@ $('fund-header').addEventListener('click', () => topUp.open());
 $('scenario-ordinary').addEventListener('click', () => testUpdate(current => ({ ...current, pity: 0, forceNextG: false, demoPrepared: 'ordinary' }), 'Обычный случайный результат подготовлен. Нажмите «Открыть 1».'));
 $('scenario-grand').addEventListener('click', () => testUpdate(forceTestG, 'ДЕМО: главная награда подготовлена. Нажмите «Открыть 1».'));
 $('scenario-guarantee').addEventListener('click', () => testUpdate(setTestPity, 'ДЕМО: гарант подготовлен. Нажмите «Открыть 1».'));
+$('reset-header').addEventListener('click', () => { if (!animating && confirm('Начать демо заново? Баланс, награды и прогресс вернутся к стартовым.')) $('reset').click(); });
 $('reset').addEventListener('click', () => {
   if (animating) return;
   topUp.close();

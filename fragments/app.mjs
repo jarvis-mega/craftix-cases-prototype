@@ -65,7 +65,7 @@ function render(message) {
   $('force-status').textContent = state.forcedGain === null ? 'Не задан · реальные шансы действуют' : `ТЕСТОВОЕ ВМЕШАТЕЛЬСТВО: следующая попытка даст +${state.forcedGain}`;
   $('restart-mode').value = state.mode;
   document.querySelectorAll('.qa-actions button').forEach(button => { button.disabled = busy || state.closed; });
-  for (const id of ['restart', 'reset-demo', 'fund-header', 'animation-speed']) $(id).disabled = busy;
+  for (const id of ['restart', 'reset-demo', 'reset-header', 'fund-header', 'animation-speed']) $(id).disabled = busy;
   $('restart-mode').disabled = busy;
   const primary = $('primary');
   if (state.closed) primary.textContent = 'Набор завершён';
@@ -189,6 +189,7 @@ $('scenario-ordinary').addEventListener('click', () => prepareScenario('ordinary
 $('scenario-big').addEventListener('click', () => prepareScenario('big'));
 $('scenario-threshold').addEventListener('click', () => prepareScenario('threshold'));
 $('scenario-assembly').addEventListener('click', () => prepareScenario('assembly'));
+$('reset-header').addEventListener('click', () => { if (!busy && confirm('Начать демо заново? Баланс, награды и прогресс вернутся к стартовым.')) $('reset-demo').click(); });
 $('reset-demo').addEventListener('click', () => {
   if (busy) return;
   try { storage.removeItem(STORAGE_KEY); state = freshState(); topUp.close(); render('Демо полностью сброшено.'); }

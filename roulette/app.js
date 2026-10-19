@@ -146,6 +146,8 @@ function render() {
   ['scenario-new', 'scenario-grand-first', 'scenario-last', 'animation-speed', 'fund-header'].forEach(id => { $(id).disabled = !!state.pending; });
   $('open-funding').disabled = !!state.pending;
   $('reset-demo').disabled = !!state.pending;
+  $('reset-header').disabled = !!state.pending;
+  $('restart-set').hidden = !complete;
   renderWheel();
 }
 
@@ -231,6 +233,8 @@ function prepareSet(mode, scenario) {
 $('scenario-new').addEventListener('click', () => prepareSet('random', 'new'));
 $('scenario-grand-first').addEventListener('click', () => prepareSet('g-first', 'first'));
 $('scenario-last').addEventListener('click', () => prepareSet('g-last', 'last'));
+$('reset-header').addEventListener('click', () => { if (!state.pending && confirm('Начать демо заново? Баланс, награды и прогресс вернутся к стартовым.')) $('reset-demo').click(); });
+$('restart-set').addEventListener('click', () => prepareSet('random', 'new'));
 $('reset-demo').addEventListener('click', () => {
   if (state.pending) return;
   try { localStorage.removeItem('craftix-finite-roulette-v1'); state = createState(); lastWin = null; notice = 'Демо сброшено.'; topUp.close(); render(); }
