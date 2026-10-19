@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1020">
+  <title>Craftix · Случайные фрагменты</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <div class="ambient ambient-a" aria-hidden="true"></div><div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-cubes" aria-hidden="true"><i></i><i></i><i></i></span><span>CRAFTIX<span class="brand-dot">.</span></span></div>
+      <span class="prototype-tag">ЛОКАЛЬНЫЙ ПРОТОТИП · БЕЗ РЕАЛЬНЫХ ПЛАТЕЖЕЙ</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="title">
+        <div class="eyebrow"><span class="eyebrow-line"></span> МЕХАНИКА / 01 <span id="mode-badge" class="mode-badge"></span></div>
+        <h1 id="title">Случайные <em>фрагменты.</em></h1>
+        <p>Открывай фрагменты, заполни шкалу и собери куб G. Каждая попытка приближает к цели.</p>
+      </section>
+
+      <div class="dashboard">
+        <section class="panel play-panel" aria-labelledby="play-title">
+          <div class="section-top"><span class="kicker">01 / ЦЕЛЬ</span><span class="small-tag">100 ФРАГМЕНТОВ</span></div>
+          <div class="reward-block">
+            <div class="reward-art" aria-hidden="true"><div class="halo"></div><div class="cube"><span class="cube-front">G</span><span class="cube-top"></span><span class="cube-side"></span></div><span class="spark spark-one">✦</span><span class="spark spark-two">✦</span></div>
+            <div class="reward-copy"><span class="reward-kicker">ГЛАВНАЯ НАГРАДА</span><h2 id="play-title">Золотой куб G</h2><p>Собирается вручную за ровно 100 фрагментов.</p><div class="owned">Уже собрано: <strong id="g-count">0</strong></div></div>
+          </div>
+          <div class="progress-head"><span>ПРОГРЕСС СБОРА</span><strong><span id="fragment-count">0</span> <small>/ 100</small></strong></div>
+          <div class="progress-track" role="progressbar" aria-label="Фрагменты до сбора" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress"><div id="progress-fill"></div></div>
+          <p class="remaining" id="remaining">Осталось 100 фрагментов</p>
+          <div id="gain-stage" class="gain-stage" aria-live="polite" hidden><span>ПОЛУЧЕНО</span><strong id="gain-value">+2</strong><small id="gain-note"></small></div>
+          <div id="payment-area" class="payment-area"><span class="input-label">ВЫБЕРИТЕ ОПЛАТУ ПОПЫТКИ</span><div class="payment-options">
+            <label class="payment-option"><input type="radio" name="payment" value="crystals"><span class="option-icon crystal">◆</span><span><strong>100 TEST-кристаллов</strong><small>Баланс: <b id="crystal-balance">0</b></small></span></label>
+            <label class="payment-option"><input type="radio" name="payment" value="ticket"><span class="option-icon ticket">▣</span><span><strong>1 билет</strong><small>Баланс: <b id="ticket-balance">0</b></small></span></label>
+          </div><p id="payment-rule" class="payment-rule" hidden></p></div>
+          <div id="collection-preview" class="collection-preview" hidden></div>
+          <button id="primary" class="primary-button" type="button"></button>
+          <button id="skip" class="skip-button" type="button" hidden>Пропустить анимацию →</button>
+          <p id="status" class="status" role="status" aria-live="polite"></p>
+          <p class="microcopy">Оплата не переключается автоматически. При нехватке выбранной валюты попытка не начнётся. Пропуск анимации не меняет результат.</p>
+        </section>
+
+        <aside class="side">
+          <section class="panel rule-panel" aria-labelledby="rules-title">
+            <span class="kicker">02 / ПРАВИЛА</span><h2 id="rules-title">Всегда с выигрышем</h2>
+            <p>При каждой оплаченной попытке выпадает один из трёх результатов. Нулевого выигрыша нет.</p>
+            <div class="odds"><div><span class="gain gain-2">+2</span><span>ФРАГМЕНТА</span><strong>80%</strong></div><div><span class="gain gain-5">+5</span><span>ФРАГМЕНТОВ</span><strong>18%</strong></div><div><span class="gain gain-20">+20</span><span>ФРАГМЕНТОВ</span><strong>2%</strong></div></div>
+            <p class="guarantee">От нуля до 100 — не более 50 попыток при достаточном балансе: минимум +2 каждый раз.</p>
+          </section>
+          <section class="panel mode-panel" aria-labelledby="mode-title"><span class="kicker">03 / РЕЖИМ НАБОРА</span><h2 id="mode-title">После сбора</h2><p id="mode-description"></p><div id="conversion-rule" class="conversion-rule" hidden><span>КУРС ДО УЧАСТИЯ</span><strong>1 остаточный фрагмент = 1 D</strong><small>При сборе G сначала спишутся 100 фрагментов, затем весь остаток конвертируется в D.</small></div></section>
+          <section class="panel stats-panel" aria-labelledby="stats-title"><span class="kicker">04 / УЧЁТ</span><h2 id="stats-title">Баланс и действия</h2><div class="stats-grid"><div><span>Попыток</span><strong id="attempts">0</strong></div><div><span>TEST-кристаллов потрачено</span><strong id="spent">0</strong></div><div><span>Билетов использовано</span><strong id="used">0</strong></div><div><span>Баланс D</span><strong id="d-count">0</strong></div></div></section>
+        </aside>
+      </div>
+
+      <div class="bottom-grid">
+        <section class="panel history-panel" aria-labelledby="history-title"><div class="section-top"><div><span class="kicker">05 / ЖУРНАЛ</span><h2 id="history-title">Последние попытки</h2></div><span id="history-total" class="small-tag">0 ВСЕГО</span></div><div id="history" class="history-list"></div></section>
+        <section class="panel receipt-panel" aria-labelledby="receipt-title"><span class="kicker">06 / ТРАНЗАКЦИЯ</span><h2 id="receipt-title">Последний сбор</h2><div id="receipt"></div></section>
+      </div>
+
+      <details class="qa-panel"><summary><span>🧪 Тестовая панель</span><span>ОТКРЫТЬ НАСТРОЙКИ</span></summary><div class="qa-content"><p>Только для проверки прототипа. Добавление ресурсов, установка фрагментов и принудительный результат — тестовые вмешательства.</p><div class="qa-actions"><button id="add-crystals" type="button">+10 000 TEST-кристаллов</button><button id="add-tickets" type="button">+10 билетов</button><button id="set-98" type="button">Установить 98 фрагментов</button></div><div class="qa-force"><span>ПРИНУДИТЕЛЬНО СЛЕДУЮЩИЙ ВЫИГРЫШ</span><div><button data-force="2" type="button">+2</button><button data-force="5" type="button">+5</button><button data-force="20" type="button">+20</button></div><small id="force-status">Не задан · реальные шансы действуют</small></div><div class="qa-restart"><label for="restart-mode">РЕЖИМ ПРИ ПЕРЕЗАПУСКЕ</label><select id="restart-mode"><option value="repeatable">A · Повторяемый</option><option value="permanent">B · Одноразовый до перезапуска теста</option></select><button id="restart" type="button">Начать заново в выбранном режиме</button></div></div></details>
+    </main>
+    <footer>CRAFTIX / СЛУЧАЙНЫЕ ФРАГМЕНТЫ <span>ДЕМО · ДАННЫЕ ТОЛЬКО В ЭТОМ БРАУЗЕРЕ</span></footer>
+  </div>
+</body>
+</html>
