@@ -94,7 +94,7 @@ function renderResult(reveal = false) {
   }
   const summary = makeText('div', 'result-summary', '');
   summary.append(makeText('strong', '', `Открытие #${result.id} · ${result.count} шт.`));
-  const unit = result.payment === 'crystals' ? 'кристаллов' : 'билетов';
+  const unit = result.payment === 'crystals' ? 'кристаллов' : result.cost === 1 ? 'билет' : 'билетов';
   summary.append(makeText('span', '', `−${number(result.cost)} ${unit} · без G: ${result.beforePity} → ${result.afterPity}`));
   if (result.demoScenario) summary.append(makeText('span', 'tag test', `ДЕМО: ${result.demoScenario === 'grand' ? 'главная награда' : result.demoScenario === 'guarantee' ? 'гарантия' : 'обычное открытие'}`));
   if (result.entries.some(entry => entry.reward === 'G')) summary.append(makeText('span', 'result-next', 'G получена: счётчик гарантии сброшен. Можно открыть кейс снова.'));
@@ -193,7 +193,7 @@ function startOpening(count) {
     state = outcome.state;
     animating = true;
     reelIndex = 0;
-    $('payment-help').textContent = `Списано ${number(outcome.result.cost)} ${outcome.result.payment === 'crystals' ? 'кристаллов' : 'билетов'}. Результат уже сохранён.`;
+    $('payment-help').textContent = `Списано ${number(outcome.result.cost)} ${outcome.result.payment === 'crystals' ? 'кристаллов' : outcome.result.cost === 1 ? 'билет' : 'билетов'}. Результат уже сохранён.`;
     $('payment-help').removeAttribute('role');
     render();
     playReelStep();

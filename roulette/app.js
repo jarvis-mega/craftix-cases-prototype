@@ -110,6 +110,16 @@ function render() {
     banner.className = 'win-banner';
     banner.innerHTML = `<span>✦ ПОЛУЧЕНО</span><strong>${prize.name}</strong><small>Этот приз больше не выпадет в данном наборе.</small>`;
   }
+  const latestId = state.won.at(-1);
+  const receipt = $('spin-receipt');
+  receipt.hidden = !latestId || !!state.pending || (state.demoScenario === 'last' && state.won.length === 3);
+  if (!receipt.hidden) {
+    const prize = PRIZES.find(item => item.id === latestId);
+    const cost = COSTS[state.won.length - 1];
+    const nextAction = state.balance < nextCost(state) ? `пополнить баланс для вращения за ◆ ${format(nextCost(state))}` : `крутить за ◆ ${format(nextCost(state))}`;
+    const next = complete ? 'Набор завершён.' : state.paused ? 'Далее: вернуться к рулетке или оставить набор сохранённым.' : hasGrand ? `Далее: остановиться или ${nextAction}.` : `Далее: ${nextAction}.`;
+    receipt.textContent = `Ход ${state.won.length}: ${prize.name}. Списано ◆ ${format(cost)}; приз добавлен в коллекцию, осталось ${state.remaining.length} в рулетке. ${next}`;
+  }
   $('stop-button').hidden = !hasGrand || state.paused || complete || !!state.pending;
   $('skip-button').hidden = !state.pending;
   const button = $('spin-button');

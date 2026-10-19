@@ -14,7 +14,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(ellipse at 50% -25%, #283048 0, #101525 52%); overflow-x: hidden; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 50% -25%, #283048 0, #101525 52%); overflow-x: hidden; }
 button, select { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
@@ -67,6 +67,7 @@ h2 { font-size: 19px; line-height: 1.25; letter-spacing: -.045em; margin: 10px 0
 .win-banner span { color: #efaa9c; font-size: 9px; font-weight: 800; letter-spacing: .16em; }
 .win-banner strong { font: 700 15px Unbounded, sans-serif; }
 .win-banner small { color: #cbbbc3; font-size: 11px; line-height: 1.45; }
+.spin-receipt { margin: 0 0 14px; padding: 11px 13px; border: 1px solid #57647a; border-radius: 8px; background: #20293a; color: #d8deea; font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
 .grand-banner, .complete-banner { border-color: #b98e49; background: linear-gradient(100deg, #504134, #332e35); }
 .grand-banner span, .complete-banner span { color: #f5c477; }
 .action-area { display: grid; gap: 8px; }
@@ -147,7 +148,7 @@ footer span { font-weight: 500; letter-spacing: 0; }
   .prize-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 650px) {
-  :root { --wheel-size: min(74vw, 310px); }
+  :root { --wheel-size: min(74vw, calc(100vw - 107px), 310px); }
   .app-shell { padding: 0 16px; }
   .topbar { padding: 17px 0; }
   .brand { font-size: 17px; }

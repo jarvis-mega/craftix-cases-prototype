@@ -82,6 +82,14 @@ function render(message) {
     ? `<div class="receipt-lines">${receipt.demo ? '<strong class="forced">ДЕМО-СБОРКА</strong>' : ''}<div><span>Фрагментов до сбора</span><strong>${fmt(receipt.before)}</strong></div><div><span>Списано за G</span><strong>−100</strong></div><div><span>Осталось фрагментов после сбора</span><strong>${state.mode === 'permanent' ? '0' : fmt(receipt.leftover)}</strong></div>${state.mode === 'permanent' ? `<div><span>Конвертировано в D · 1:1</span><strong>+${fmt(receipt.converted)}</strong></div>` : ''}<div class="receipt-final"><span>Получено</span><strong>+1 G</strong></div></div>`
     : '<div class="empty">Когда соберёте G, здесь появится точная разбивка операции.</div>';
   $('status').textContent = message ?? (state.closed ? 'G получен. Цель закрыта до перезапуска теста; новые попытки недоступны.' : state.fragments >= TARGET ? 'Можно собрать G. Новые попытки заблокированы до сбора.' : !canPay(state) ? 'Недостаточно выбранной валюты. Оплата не переключается автоматически.' : state.lastGain ? `Последний результат +${state.lastGain} сохранён. Следующая попытка только по нажатию.` : 'Выберите валюту и сделайте попытку.');
+  const lastAttempt = state.lastGain === null ? null : state.history.at(-1);
+  const attemptReceipt = $('attempt-receipt');
+  attemptReceipt.hidden = !lastAttempt;
+  if (lastAttempt) {
+    const payment = lastAttempt.payment === 'crystals' ? '100 TEST-кристаллов' : '1 билет';
+    const next = state.fragments >= TARGET ? 'Далее: собрать G за 100 фрагментов.' : canPay(state) ? `Далее: новая попытка за ${state.payment === 'crystals' ? '100 TEST-кристаллов' : '1 билет'}.` : 'Далее: пополнить выбранную валюту или выбрать другую.';
+    attemptReceipt.textContent = `Попытка №${lastAttempt.id}: +${lastAttempt.gain} ${lastAttempt.gain === 2 ? 'фрагмента' : 'фрагментов'}. Списано ${payment}; запас вырос до ${fmt(state.fragments)}. ${next}`;
+  }
 }
 
 function endAnimation() {
@@ -153,7 +161,7 @@ $('primary').addEventListener('click', () => {
   if (result.error) { render(errors[result.error]); if (result.error === 'insufficient-funds') topUp.open(); return; }
   if (!commit(result.state)) return;
   busy = true;
-  render(`Сохранено: +${result.gain} фрагментов.`);
+  render(`Сохранено: +${result.gain} ${result.gain === 2 ? 'фрагмента' : 'фрагментов'}.`);
   showGain(result.gain, result.state.history.at(-1).forced, before);
 });
 $('skip').addEventListener('click', endAnimation);
