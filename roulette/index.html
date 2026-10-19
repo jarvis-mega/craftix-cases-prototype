@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#101525">
   <title>Craftix · Конечная рулетка</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="../demo-ui.css">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -17,7 +18,7 @@
       </a>
       <div class="topbar-right">
         <span class="demo-tag">ИНТЕРАКТИВНЫЙ ПРОТОТИП</span>
-        <div class="balance-pill" aria-live="polite"><span class="crystal-icon">◆</span><span id="balance">1 500</span><span class="balance-unit">КРИСТАЛЛОВ</span></div>
+        <div class="balance-pill" aria-live="polite"><span class="crystal-icon">◆</span><span id="balance">1 500</span><span class="balance-unit">КРИСТАЛЛОВ</span></div><button id="fund-header" class="demo-fund-button" type="button">+ Пополнить</button>
       </div>
     </header>
 
@@ -40,7 +41,8 @@
             <div id="wheel-disc" class="wheel-disc" aria-label="Рулетка с четырьмя равными секторами"></div>
             <div class="wheel-hub" aria-hidden="true"><span>✦</span></div>
           </div>
-          <div id="status" class="status-line" role="status" aria-live="polite">Один приз за вращение · Без повторов</div>
+          <button id="fund-demo" class="demo-fund-button" type="button">Пополнить тестовый баланс</button>
+          <details class="how-panel"><summary>Как это работает</summary><p>За вращение вы получаете одну из оставшихся наград. Случаен сектор, все активные сектора равновероятны; повторов внутри набора нет. Полученный приз исчезает с колеса, шанс остальных растёт, а цена следующего вращения указана ниже. Цикл заканчивается после четырёх призов; после G можно остановиться раньше.</p><p><strong>Главная награда G</strong> — золотой куб. <strong>Оставшийся набор</strong> — призы, которые ещё видны на колесе. Гарантия здесь — получение каждого приза к концу четырёх вращений; фрагментов нет.</p></details><label class="animation-choice" for="animation-speed">Анимация <select id="animation-speed"><option value="normal">Обычная</option><option value="fast">Быстрая</option></select></label><div id="status" class="status-line" role="status" aria-live="polite">Один приз за вращение · Без повторов</div>
           <div id="win-banner" class="win-banner" hidden></div>
           <div class="action-area">
             <button id="spin-button" class="primary-button" type="button"><span>Крутить рулетку</span><span id="button-cost" class="button-cost"><span class="crystal-icon">◆</span> 100</span></button>
@@ -85,14 +87,13 @@
       </section>
 
       <details id="testing-panel" class="testing-panel">
-        <summary><span><span class="test-icon">⚙</span> Тестирование прототипа</span><span class="summary-arrow">⌄</span></summary>
+        <summary><span><span class="test-icon">⚙</span> Посмотреть сценарий</span><span class="summary-arrow">⌄</span></summary>
         <div class="testing-body">
           <p>Эти действия доступны только в демо. Новый набор явно начинает новый цикл и возвращает стартовые 1 500 кристаллов.</p>
           <div class="testing-controls">
-            <label class="scenario-label" for="scenario">Сценарий следующего набора</label>
-            <select id="scenario"><option value="random">Обычный случайный</option><option value="g-first">ТЕСТ: G первым</option><option value="g-last">ТЕСТ: G последним</option></select>
-            <button id="new-set" class="secondary-button" type="button">Новый демо-набор</button>
-            <button id="add-crystals" class="secondary-button" type="button">+10 000 кристаллов</button>
+            <button id="scenario-new" class="secondary-button" type="button">Новый набор</button><button id="scenario-grand-first" class="secondary-button" type="button">Главная награда первым вращением</button><button id="scenario-last" class="secondary-button" type="button">Последнее вращение / завершение</button>
+            <button id="open-funding" class="secondary-button" type="button">Пополнить баланс</button>
+            <button id="reset-demo" class="secondary-button" type="button">Начать демо заново</button>
           </div>
         </div>
       </details>

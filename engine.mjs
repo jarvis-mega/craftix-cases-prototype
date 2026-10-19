@@ -17,6 +17,7 @@ export function initialState() {
     tickets: 3,
     pity: 0,
     forceNextG: false,
+    demoPrepared: null,
     inventory: Object.fromEntries(REWARDS.map(reward => [reward.id, 0])),
     history: [],
     lastResult: null,
@@ -47,6 +48,7 @@ export function isValidState(state) {
   return Boolean(state && state.version === 1 && isCount(state.crystals) &&
     isCount(state.tickets) && Number.isInteger(state.pity) && state.pity >= 0 &&
     state.pity <= 79 && typeof state.forceNextG === 'boolean' &&
+    (state.demoPrepared === undefined || state.demoPrepared === null || ['ordinary', 'grand', 'guarantee'].includes(state.demoPrepared)) &&
     state.inventory && REWARDS.every(reward => isCount(state.inventory[reward.id])) &&
     Array.isArray(state.history) && state.history.length <= MAX_HISTORY &&
     state.history.every(isValidResult) &&
@@ -112,7 +114,9 @@ export function openCase(state, { count, payment, random = Math.random, now = Da
     afterPity: next.pity,
     entries,
     at: new Date(now()).toISOString(),
+    demoScenario: next.demoPrepared ?? null,
   };
+  next.demoPrepared = null;
   next.lastResult = result;
   next.pendingResult = result;
   next.history.unshift(result);
@@ -126,18 +130,19 @@ export function finishAnimation(state) {
   return { ...state, pendingResult: null };
 }
 
-export function grantTestResource(state, resource) {
+export function grantTestResource(state, resource, amount = resource === 'crystals' ? 10000 : 10) {
   if (!isValidState(state)) throw new TypeError('Invalid demo state');
   if (resource !== 'crystals' && resource !== 'tickets') throw new RangeError('Unknown resource');
-  return { ...state, [resource]: state[resource] + (resource === 'crystals' ? 10000 : 10) };
+  if (!Number.isSafeInteger(amount) || amount <= 0 || !Number.isSafeInteger(state[resource] + amount)) throw new RangeError('Invalid test amount');
+  return { ...state, [resource]: state[resource] + amount };
 }
 
 export function setTestPity(state) {
   if (!isValidState(state)) throw new TypeError('Invalid demo state');
-  return { ...state, pity: 79 };
+  return { ...state, pity: 79, forceNextG: false, demoPrepared: 'guarantee' };
 }
 
 export function forceTestG(state) {
   if (!isValidState(state)) throw new TypeError('Invalid demo state');
-  return { ...state, forceNextG: true };
+  return { ...state, forceNextG: true, demoPrepared: 'grand' };
 }

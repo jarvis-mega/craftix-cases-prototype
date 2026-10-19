@@ -1,3 +1,4 @@
+import { createTopUp } from '../demo-ui.mjs';
 import { STORAGE_KEY, TARGET, freshState, loadState, saveState, attempt, collect, selectPayment, addResources, setFragments98, forceNextGain, canPay } from './engine.mjs';
 
 const $ = id => document.getElementById(id);
@@ -12,7 +13,7 @@ let animationTimer = null;
 const errors = {
   'closed': 'Набор завершён. Для нового теста перезапустите режим в тестовой панели.',
   'collect-first': 'Сначала соберите G за 100 фрагментов.',
-  'insufficient-funds': 'Недостаточно выбранной валюты. Пополнение доступно в тестовой панели.',
+  'insufficient-funds': 'Недостаточно выбранной валюты. Нажмите «Пополнить тестовый баланс» рядом с действием.',
   'not-ready': 'Для сбора требуется минимум 100 фрагментов.',
 };
 
@@ -34,6 +35,8 @@ function render(message) {
     : 'Один сбор закрывает цель до перезапуска теста. После списания 100 весь остаток конвертируется в D по курсу 1:1.';
   $('conversion-rule').hidden = state.mode !== 'permanent';
   $('g-count').textContent = fmt(state.g);
+  $('header-crystals').textContent = fmt(state.crystals);
+  $('header-tickets').textContent = fmt(state.tickets);
   $('d-count').textContent = fmt(state.d);
   $('fragment-count').textContent = fmt(state.fragments);
   const ready = !state.closed && state.fragments >= TARGET;
@@ -61,21 +64,22 @@ function render(message) {
   $('history-total').textContent = `${fmt(state.attempts)} ВСЕГО`;
   $('force-status').textContent = state.forcedGain === null ? 'Не задан · реальные шансы действуют' : `ТЕСТОВОЕ ВМЕШАТЕЛЬСТВО: следующая попытка даст +${state.forcedGain}`;
   $('restart-mode').value = state.mode;
-  $('set-98').disabled = busy || state.closed;
-  document.querySelectorAll('[data-force]').forEach(button => { button.disabled = busy || state.closed; });
-  for (const id of ['add-crystals', 'add-tickets', 'restart']) $(id).disabled = busy;
+  document.querySelectorAll('.qa-actions button').forEach(button => { button.disabled = busy || state.closed; });
+  for (const id of ['restart', 'reset-demo', 'fund-header', 'animation-speed']) $(id).disabled = busy;
   $('restart-mode').disabled = busy;
   const primary = $('primary');
   if (state.closed) primary.textContent = 'Набор завершён';
   else if (state.fragments >= TARGET) primary.textContent = 'Собрать G за 100 фрагментов';
   else primary.textContent = state.payment === 'crystals' ? 'Открыть за 100 TEST-кристаллов' : 'Открыть за 1 билет';
   primary.disabled = busy || collectionLock || state.closed;
+  $('fund-demo').hidden = state.closed || ready || canPay(state);
+  $('fund-demo').disabled = busy;
   $('history').innerHTML = state.history.length
     ? state.history.slice(-12).reverse().map(h => `<div class="history-row"><span>№ ${h.id} · ${h.payment === 'crystals' ? '100 TEST-кристаллов' : '1 билет'}</span>${h.forced ? '<span class="forced">ТЕСТОВОЕ ВМЕШАТЕЛЬСТВО</span>' : ''}<strong>+${h.gain}</strong></div>`).join('')
     : '<div class="empty">Пока нет попыток. Выберите оплату и откройте первый фрагмент.</div>';
   const receipt = state.collections.at(-1);
   $('receipt').innerHTML = receipt
-    ? `<div class="receipt-lines"><div><span>Фрагментов до сбора</span><strong>${fmt(receipt.before)}</strong></div><div><span>Списано за G</span><strong>−100</strong></div><div><span>Осталось фрагментов после сбора</span><strong>${state.mode === 'permanent' ? '0' : fmt(receipt.leftover)}</strong></div>${state.mode === 'permanent' ? `<div><span>Конвертировано в D · 1:1</span><strong>+${fmt(receipt.converted)}</strong></div>` : ''}<div class="receipt-final"><span>Получено</span><strong>+1 G</strong></div></div>`
+    ? `<div class="receipt-lines">${receipt.demo ? '<strong class="forced">ДЕМО-СБОРКА</strong>' : ''}<div><span>Фрагментов до сбора</span><strong>${fmt(receipt.before)}</strong></div><div><span>Списано за G</span><strong>−100</strong></div><div><span>Осталось фрагментов после сбора</span><strong>${state.mode === 'permanent' ? '0' : fmt(receipt.leftover)}</strong></div>${state.mode === 'permanent' ? `<div><span>Конвертировано в D · 1:1</span><strong>+${fmt(receipt.converted)}</strong></div>` : ''}<div class="receipt-final"><span>Получено</span><strong>+1 G</strong></div></div>`
     : '<div class="empty">Когда соберёте G, здесь появится точная разбивка операции.</div>';
   $('status').textContent = message ?? (state.closed ? 'G получен. Цель закрыта до перезапуска теста; новые попытки недоступны.' : state.fragments >= TARGET ? 'Можно собрать G. Новые попытки заблокированы до сбора.' : !canPay(state) ? 'Недостаточно выбранной валюты. Оплата не переключается автоматически.' : state.lastGain ? `Последний результат +${state.lastGain} сохранён. Следующая попытка только по нажатию.` : 'Выберите валюту и сделайте попытку.');
 }
@@ -84,17 +88,51 @@ function endAnimation() {
   if (animationTimer) clearTimeout(animationTimer);
   animationTimer = null;
   $('gain-stage').hidden = true;
+  $('gain-stage').classList.remove('assembly', 'big');
+  $('gain-stage').querySelectorAll('.fragment-particle').forEach(el => el.remove());
   $('skip').hidden = true;
   busy = false;
+  collectionLock = false;
   render();
 }
 
-function showGain(gain, forced) {
+function showGain(gain, forced, before) {
   $('gain-value').textContent = `+${gain}`;
-  $('gain-note').textContent = forced ? 'ТЕСТОВОЕ ВМЕШАТЕЛЬСТВО' : 'ФРАГМЕНТОВ';
-  $('gain-stage').hidden = false;
+  $('gain-note').textContent = `${forced ? 'ДЕМО · ' : ''}ФРАГМЕНТОВ ЦЕЛИ G`;
+  $('gain-stage').classList.toggle('big', gain === 20);
+  const stage = $('gain-stage');
+  stage.classList.remove('assembly');
+  stage.hidden = false;
+  const source = stage.getBoundingClientRect();
+  const target = document.querySelector('.reward-art').getBoundingClientRect();
+  const dx = target.left + target.width / 2 - (source.left + source.width / 2);
+  const dy = target.top + target.height / 2 - (source.top + source.height / 2);
+  for (let i = 0; i < Math.min(gain, 12); i++) {
+    const particle = document.createElement('span');
+    particle.className = 'fragment-particle'; particle.textContent = '◆';
+    particle.style.setProperty('--fly-x', `${dx + (i - 5) * 5}px`);
+    particle.style.setProperty('--fly-y', `${dy}px`);
+    particle.style.setProperty('--particle-delay', `${i * 55}ms`);
+    stage.append(particle);
+  }
+  $('fragment-count').textContent = fmt(before);
+  $('progress').setAttribute('aria-valuenow', String(Math.min(100, before)));
+  $('progress-fill').style.width = `${Math.min(100, before)}%`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { $('progress-fill').style.width = `${Math.min(100, state.fragments)}%`; }));
   $('skip').hidden = false;
-  animationTimer = setTimeout(endAnimation, 1700);
+  setTimeout(() => { if (state.fragments >= before) { $('fragment-count').textContent = fmt(state.fragments); $('progress').setAttribute('aria-valuenow', String(Math.min(100, state.fragments))); } }, 1050);
+  animationTimer = setTimeout(endAnimation, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : $('animation-speed').value === 'fast' ? 950 : 2800);
+}
+
+function showAssembly(receipt) {
+  const stage = $('gain-stage');
+  stage.classList.remove('big');
+  stage.classList.add('assembly');
+  $('gain-value').textContent = 'G';
+  $('gain-note').textContent = `СОБРАНО ИЗ 100 ФРАГМЕНТОВ · ОСТАТОК ${receipt.leftover}`;
+  stage.hidden = false;
+  $('skip').hidden = false;
+  animationTimer = setTimeout(endAnimation, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : $('animation-speed').value === 'fast' ? 950 : 3000);
 }
 
 $('primary').addEventListener('click', () => {
@@ -105,16 +143,18 @@ $('primary').addEventListener('click', () => {
     const result = collect(state, id);
     if (result.error) { collectionLock = false; render(errors[result.error]); return; }
     if (!commit(result.state)) { collectionLock = false; render('Не удалось сохранить данные браузера. Сбор отменён.'); return; }
+    busy = true;
     render(`Собран +1 G. Списано 100 фрагментов${result.receipt.converted ? `, +${result.receipt.converted} D за остаток` : ''}.`);
-    setTimeout(() => { collectionLock = false; render(); }, 650);
+    showAssembly(result.receipt);
     return;
   }
+  const before = state.fragments;
   const result = attempt(state);
-  if (result.error) { render(errors[result.error]); return; }
+  if (result.error) { render(errors[result.error]); if (result.error === 'insufficient-funds') topUp.open(); return; }
   if (!commit(result.state)) return;
   busy = true;
   render(`Сохранено: +${result.gain} фрагментов.`);
-  showGain(result.gain, result.state.history.at(-1).forced);
+  showGain(result.gain, result.state.history.at(-1).forced, before);
 });
 $('skip').addEventListener('click', endAnimation);
 document.querySelectorAll('input[name="payment"]').forEach(input => input.addEventListener('change', () => {
@@ -122,12 +162,30 @@ document.querySelectorAll('input[name="payment"]').forEach(input => input.addEve
   const next = selectPayment(state, input.value);
   if (next !== state && commit(next)) render();
 }));
-$('add-crystals').addEventListener('click', () => { if (!busy && commit(addResources(state, 'crystals'))) render('Тестовое пополнение: +10 000 TEST-кристаллов.'); });
-$('add-tickets').addEventListener('click', () => { if (!busy && commit(addResources(state, 'tickets'))) render('Тестовое пополнение: +10 билетов.'); });
-$('set-98').addEventListener('click', () => { if (!busy && !state.closed && commit(setFragments98(state))) render('Тестовое вмешательство: установлено 98 фрагментов.'); });
-document.querySelectorAll('[data-force]').forEach(button => button.addEventListener('click', () => {
-  if (!busy && !state.closed && commit(forceNextGain(state, Number(button.dataset.force)))) render('Тестовое вмешательство: следующий результат зафиксирован.');
-}));
+const topUp = createTopUp({ getBalance: () => state, onGrant: (kind, amount) => {
+  if (busy || !commit(addResources(state, kind, amount))) return false;
+  render(`Тестовое пополнение: +${fmt(amount)} ${kind === 'crystals' ? 'кристаллов' : 'билетов'}.`); return true;
+} });
+$('fund-demo').addEventListener('click', () => topUp.open());
+$('fund-header').addEventListener('click', () => topUp.open());
+function prepareScenario(kind) {
+  if (busy || state.closed) return;
+  let next = state;
+  if (kind === 'ordinary') next = { ...forceNextGain(state, 2), demoPrepared: 'ordinary' };
+  if (kind === 'big') next = { ...forceNextGain(state, 20), demoPrepared: 'big' };
+  if (kind === 'threshold') next = { ...forceNextGain(setFragments98(state), 2), demoPrepared: 'threshold' };
+  if (kind === 'assembly') next = { ...state, fragments: 105, forcedGain: null, demoPrepared: 'assembly' };
+  if (commit(next)) render(`ДЕМО подготовлено: ${kind === 'assembly' ? 'нажмите «Собрать G»' : 'нажмите основную кнопку'}.`);
+}
+$('scenario-ordinary').addEventListener('click', () => prepareScenario('ordinary'));
+$('scenario-big').addEventListener('click', () => prepareScenario('big'));
+$('scenario-threshold').addEventListener('click', () => prepareScenario('threshold'));
+$('scenario-assembly').addEventListener('click', () => prepareScenario('assembly'));
+$('reset-demo').addEventListener('click', () => {
+  if (busy) return;
+  try { storage.removeItem(STORAGE_KEY); state = freshState(); topUp.close(); render('Демо полностью сброшено.'); }
+  catch { render('Не удалось сбросить демо.'); }
+});
 $('restart').addEventListener('click', () => {
   if (busy) return;
   const mode = $('restart-mode').value;

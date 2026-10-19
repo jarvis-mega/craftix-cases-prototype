@@ -1,3 +1,4 @@
+import { createTopUp } from './demo-ui.mjs';
 import { REWARDS, grantTestResource, setTestPity, forceTestG } from './engine.mjs';
 import { loadState, openAndPersist, updateAndPersist, finishPending, resetState } from './storage.mjs';
 
@@ -7,6 +8,9 @@ const number = value => new Intl.NumberFormat('ru-RU').format(value);
 let state;
 let animating = false;
 let animationTimer = null;
+let reelIndex = 0;
+let inventoryBefore = null;
+let revealResult = false;
 
 function selectedPayment() {
   return document.querySelector('input[name="payment"]:checked').value;
@@ -33,7 +37,7 @@ function renderInventory() {
   list.replaceChildren();
   for (const reward of REWARDS) {
     const row = makeText('div', `inventory-row ${reward.color}`, '');
-    row.append(makeText('span', 'inventory-dot', ''), makeText('span', '', `${reward.id} · ${reward.name}`), makeText('strong', '', `× ${number(state.inventory[reward.id])}`));
+    row.append(makeText('span', 'inventory-dot', ''), makeText('span', '', `${reward.id} · ${reward.name}`), makeText('strong', '', `× ${number((animating ? inventoryBefore : state.inventory)[reward.id])}`));
     list.append(row);
   }
 }
@@ -51,7 +55,7 @@ function renderHistory() {
     list.append(makeText('p', 'empty-state', 'Пока нет открытий.'));
     return;
   }
-  for (const result of state.history) {
+  for (const result of state.history.filter(item => !animating || item.id !== state.pendingResult?.id)) {
     const block = makeText('article', 'history-entry', '');
     const top = makeText('div', 'history-entry-top', '');
     top.append(makeText('span', '', `#${result.id} · ${result.count} ${result.count === 1 ? 'открытие' : 'открытий'}`));
@@ -59,7 +63,7 @@ function renderHistory() {
     time.dateTime = result.at;
     top.append(time);
     const payment = result.payment === 'crystals' ? '◆' : '▣';
-    const rewards = result.entries.map(entry => `${entry.reward}${entry.source === 'guarantee' ? ' (гарант)' : entry.source === 'test' ? ' (ТЕСТ)' : ''}`).join(' · ');
+    const rewards = result.entries.map(entry => `${rewardById[entry.reward].name}${entry.source === 'guarantee' ? ' (гарант)' : entry.source === 'test' ? ' (ТЕСТ)' : ''}`).join(' · ');
     block.append(top, makeText('p', 'history-entry-sub', `${number(result.cost)} ${payment} → ${rewards}`));
     list.append(block);
   }
@@ -69,6 +73,21 @@ function renderResult(reveal = false) {
   const host = $('result-content');
   host.replaceChildren();
   const result = state.lastResult;
+  if (animating && result) {
+    const stage = makeText('div', 'reel-stage', '');
+    stage.append(makeText('div', 'reel-pointer', '▼'));
+    stage.append(makeText('div', 'reel-track', ''));
+    host.append(makeText('p', 'reel-caption', `Открытие ${reelIndex + 1} из ${result.count} · результат уже сохранён`), stage);
+    if (reelIndex) {
+      const previous = makeText('div', 'sequence-results', '');
+      result.entries.slice(0, reelIndex).forEach((entry, index) => {
+        const reward = rewardById[entry.reward];
+        previous.append(makeText('span', `sequence-result ${reward.color}`, `${index + 1}. ${reward.name}${entry.source === 'guarantee' ? ' · ГАРАНТ' : entry.source === 'test' ? ' · ДЕМО' : ''}`));
+      });
+      host.append(previous);
+    }
+    return;
+  }
   if (!result) {
     host.append(makeText('p', 'empty-state', 'Здесь появится результат первого открытия.'));
     return;
@@ -77,13 +96,16 @@ function renderResult(reveal = false) {
   summary.append(makeText('strong', '', `Открытие #${result.id} · ${result.count} шт.`));
   const unit = result.payment === 'crystals' ? 'кристаллов' : 'билетов';
   summary.append(makeText('span', '', `−${number(result.cost)} ${unit} · без G: ${result.beforePity} → ${result.afterPity}`));
+  if (result.demoScenario) summary.append(makeText('span', 'tag test', `ДЕМО: ${result.demoScenario === 'grand' ? 'главная награда' : result.demoScenario === 'guarantee' ? 'гарантия' : 'обычное открытие'}`));
+  if (result.entries.some(entry => entry.reward === 'G')) summary.append(makeText('span', 'result-next', 'G получена: счётчик гарантии сброшен. Можно открыть кейс снова.'));
+  else summary.append(makeText('span', 'result-next', `До гаранта теперь ${80 - result.afterPity} открытий. Можно продолжать.`));
   host.append(summary);
   const grid = makeText('div', `result-grid${result.count === 1 ? ' single' : ''}`, '');
   result.entries.forEach((entry, index) => {
     const reward = rewardById[entry.reward];
     const card = makeText('div', `result-item ${reward.color}${reveal ? ' revealing' : ''}`, '');
     if (reveal) card.style.setProperty('--delay', `${index * 70}ms`);
-    card.append(makeText('span', 'index', String(index + 1).padStart(2, '0')), makeText('strong', '', reward.id), makeText('small', '', reward.name));
+    card.append(makeText('span', 'index', String(index + 1).padStart(2, '0')), makeText('strong', '', reward.name), makeText('small', '', `${reward.id} · ${reward.id === 'G' ? 'Главная награда' : reward.id === 'R4' ? 'Легендарная награда' : reward.id === 'R3' ? 'Редкая награда' : 'Обычная награда'}`));
     const label = entryLabel(entry);
     if (label) card.append(makeText('span', `tag ${entry.source}`, label));
     grid.append(card);
@@ -94,9 +116,10 @@ function renderResult(reveal = false) {
 function render() {
   $('crystals').textContent = number(state.crystals);
   $('tickets').textContent = number(state.tickets);
-  $('pity-count').textContent = `Открытий без G: ${state.pity} из 79`;
-  $('pity-remaining').textContent = `G гарантирован не позднее чем через ${80 - state.pity} открытий`;
-  $('pity-progress').style.width = `${state.pity / 79 * 100}%`;
+  const shownPity = animating ? state.lastResult.beforePity : state.pity;
+  $('pity-count').textContent = `Открытий без G: ${shownPity} из 79`;
+  $('pity-remaining').textContent = `G гарантирован не позднее чем через ${80 - shownPity} открытий`;
+  $('pity-progress').style.width = `${shownPity / 79 * 100}%`;
   const crystals = selectedPayment() === 'crystals';
   $('price-one').textContent = crystals ? '100 ◆' : '1 ▣';
   $('price-ten').textContent = crystals ? '1 000 ◆' : '10 ▣';
@@ -104,20 +127,55 @@ function render() {
   $('open-ten').disabled = animating;
   document.querySelectorAll('input[name="payment"], .test-actions button').forEach(control => { control.disabled = animating; });
   $('skip-animation').hidden = !animating;
+  $('fund-demo').disabled = animating;
+  $('fund-header').disabled = animating;
+  $('animation-speed').disabled = animating;
   renderInventory();
   renderHistory();
-  renderResult(animating);
-  $('force-g').textContent = state.forceNextG ? 'G в следующем открытии · включено' : 'G в следующем открытии';
+  renderResult(revealResult);
+  revealResult = false;
 }
 
 function finishOpening(skipped = false) {
   if (!animating) return;
   clearTimeout(animationTimer);
   animating = false;
+  inventoryBefore = null;
+  revealResult = true;
   try { state = finishPending(localStorage); }
   catch { $('payment-help').textContent = 'Результат сохранён, но не удалось завершить анимацию в хранилище. Перезагрузите страницу.'; }
   render();
   if (skipped) $('result-title').focus();
+}
+
+function playReelStep() {
+  if (!animating) return;
+  const result = state.lastResult;
+  const target = result.entries[reelIndex].reward;
+  const stage = document.querySelector('.reel-stage');
+  const track = stage.querySelector('.reel-track');
+  const ids = Array.from({ length: 19 }, (_, index) => index === 16 ? target : REWARDS[(index * 3 + reelIndex) % REWARDS.length].id);
+  track.replaceChildren(...ids.map(id => {
+    const reward = rewardById[id];
+    return makeText('div', `reel-card ${reward.color}`, reward.name);
+  }));
+  const goal = track.children[16];
+  const offset = stage.clientWidth / 2 - (goal.offsetLeft + goal.offsetWidth / 2);
+  const fast = $('animation-speed').value === 'fast';
+  const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : result.count === 1 ? (fast ? 950 : 2900) : (fast ? 90 : 280);
+  track.style.transition = 'none';
+  track.style.transform = 'translateX(0px)';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!animating) return;
+    track.style.transition = `transform ${duration}ms cubic-bezier(.13,.76,.16,1)`;
+    track.style.transform = `translateX(${offset}px)`;
+  }));
+  animationTimer = setTimeout(() => {
+    if (!animating) return;
+    reelIndex++;
+    if (reelIndex === result.count) finishOpening();
+    else { renderResult(); playReelStep(); }
+  }, duration + 80);
 }
 
 function startOpening(count) {
@@ -128,15 +186,17 @@ function startOpening(count) {
       const unit = selectedPayment() === 'crystals' ? 'кристаллов' : 'билетов';
       $('payment-help').textContent = `Недостаточно ${unit}: нужно ${number(outcome.required)}, доступно ${number(outcome.available)}. Ресурс не менялся.`;
       $('payment-help').setAttribute('role', 'alert');
+      topUp.open();
       return;
     }
+    inventoryBefore = state.inventory;
     state = outcome.state;
     animating = true;
+    reelIndex = 0;
     $('payment-help').textContent = `Списано ${number(outcome.result.cost)} ${outcome.result.payment === 'crystals' ? 'кристаллов' : 'билетов'}. Результат уже сохранён.`;
     $('payment-help').removeAttribute('role');
     render();
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    animationTimer = setTimeout(finishOpening, reducedMotion ? 0 : 650 + count * 70);
+    playReelStep();
   } catch {
     $('payment-help').textContent = 'Не удалось сохранить открытие в браузере. Ресурсы и награды не изменились. Проверьте доступность локального хранилища.';
     $('payment-help').setAttribute('role', 'alert');
@@ -159,12 +219,18 @@ document.querySelectorAll('input[name="payment"]').forEach(input => input.addEve
   $('payment-help').textContent = 'Оплата только выбранным ресурсом. Если его не хватает, открытие не начнётся.';
   render();
 }));
-$('add-crystals').addEventListener('click', () => testUpdate(current => grantTestResource(current, 'crystals'), 'Добавлено 10 000 тестовых кристаллов.'));
-$('add-tickets').addEventListener('click', () => testUpdate(current => grantTestResource(current, 'tickets'), 'Добавлено 10 тестовых билетов.'));
-$('set-pity').addEventListener('click', () => testUpdate(setTestPity, 'Счётчик установлен на 79: следующее открытие гарантирует G.'));
-$('force-g').addEventListener('click', () => testUpdate(forceTestG, 'Следующее открытие даст G с меткой «ТЕСТ»; настройка одноразовая.'));
+const topUp = createTopUp({ getBalance: () => state, onGrant: (kind, amount) => {
+  try { state = updateAndPersist(localStorage, current => grantTestResource(current, kind, amount)); render(); return true; }
+  catch { return false; }
+} });
+$('fund-demo').addEventListener('click', () => topUp.open());
+$('fund-header').addEventListener('click', () => topUp.open());
+$('scenario-ordinary').addEventListener('click', () => testUpdate(current => ({ ...current, pity: 0, forceNextG: false, demoPrepared: 'ordinary' }), 'Обычный случайный результат подготовлен. Нажмите «Открыть 1».'));
+$('scenario-grand').addEventListener('click', () => testUpdate(forceTestG, 'ДЕМО: главная награда подготовлена. Нажмите «Открыть 1».'));
+$('scenario-guarantee').addEventListener('click', () => testUpdate(setTestPity, 'ДЕМО: гарант подготовлен. Нажмите «Открыть 1».'));
 $('reset').addEventListener('click', () => {
   if (animating) return;
+  topUp.close();
   try {
     state = resetState(localStorage);
     $('test-status').textContent = 'Демо полностью сброшено.';

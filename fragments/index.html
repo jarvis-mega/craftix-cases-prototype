@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0c1020">
   <title>Craftix · Случайные фрагменты</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="../demo-ui.css">
   <script type="module" src="./app.mjs"></script>
 </head>
 <body>
@@ -13,14 +14,14 @@
   <div class="shell">
     <header class="topbar">
       <div class="brand"><span class="brand-cubes" aria-hidden="true"><i></i><i></i><i></i></span><span>CRAFTIX<span class="brand-dot">.</span></span></div>
-      <span class="prototype-tag">ЛОКАЛЬНЫЙ ПРОТОТИП · БЕЗ РЕАЛЬНЫХ ПЛАТЕЖЕЙ</span>
+      <div class="header-balance"><span><b id="header-crystals">1 500</b> ◆ · <b id="header-tickets">3</b> билета</span><button id="fund-header" class="demo-fund-button" type="button">+ Пополнить</button></div>
     </header>
 
     <main>
       <section class="intro" aria-labelledby="title">
         <div class="eyebrow"><span class="eyebrow-line"></span> МЕХАНИКА / 01 <span id="mode-badge" class="mode-badge"></span></div>
         <h1 id="title">Случайные <em>фрагменты.</em></h1>
-        <p>Открывай фрагменты, заполни шкалу и собери куб G. Каждая попытка приближает к цели.</p>
+        <p>Случайно только количество фрагментов; все они копятся для одной конкретной награды — золотого куба G.</p>
       </section>
 
       <div class="dashboard">
@@ -33,13 +34,14 @@
           <div class="progress-head"><span>ПРОГРЕСС СБОРА</span><strong><span id="fragment-count">0</span> <small>/ 100</small></strong></div>
           <div class="progress-track" role="progressbar" aria-label="Фрагменты до сбора" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress"><div id="progress-fill"></div></div>
           <p class="remaining" id="remaining">Осталось 100 фрагментов</p>
-          <div id="gain-stage" class="gain-stage" aria-live="polite" hidden><span>ПОЛУЧЕНО</span><strong id="gain-value">+2</strong><small id="gain-note"></small></div>
+          <div id="gain-stage" class="gain-stage" aria-live="polite" hidden><div class="fragment-container" aria-hidden="true">▣</div><span>ПОЛУЧЕНО</span><strong id="gain-value">+2</strong><small id="gain-note"></small></div>
           <div id="payment-area" class="payment-area"><span class="input-label">ВЫБЕРИТЕ ОПЛАТУ ПОПЫТКИ</span><div class="payment-options">
             <label class="payment-option"><input type="radio" name="payment" value="crystals"><span class="option-icon crystal">◆</span><span><strong>100 TEST-кристаллов</strong><small>Баланс: <b id="crystal-balance">0</b></small></span></label>
             <label class="payment-option"><input type="radio" name="payment" value="ticket"><span class="option-icon ticket">▣</span><span><strong>1 билет</strong><small>Баланс: <b id="ticket-balance">0</b></small></span></label>
           </div><p id="payment-rule" class="payment-rule" hidden></p></div>
           <div id="collection-preview" class="collection-preview" hidden></div>
-          <button id="primary" class="primary-button" type="button"></button>
+          <details class="how-panel"><summary>Как это работает</summary><p>За каждую попытку вы получаете 2, 5 или 20 фрагментов цели G. Случайно только их количество; повторных наград нет, потому что фрагменты складываются в один запас. Шкала растёт, пока не накопится 100; затем вручную собирается G. В повторяемом режиме цикл можно начать снова, в одноразовом — он закрывается.</p><p><strong>Фрагменты</strong> — части золотого куба, а <strong>главная награда G</strong> — собранный куб. <strong>Остаток</strong> сверх 100 сохраняется в режиме A или превращается в D в режиме B. Гарантия здесь — минимум 2 фрагмента за попытку, поэтому от нуля нужно не более 50 попыток.</p></details><label class="animation-choice" for="animation-speed">Анимация <select id="animation-speed"><option value="normal">Обычная</option><option value="fast">Быстрая</option></select></label><button id="primary" class="primary-button" type="button"></button>
+          <button id="fund-demo" class="demo-fund-button" type="button">Пополнить тестовый баланс</button>
           <button id="skip" class="skip-button" type="button" hidden>Пропустить анимацию →</button>
           <p id="status" class="status" role="status" aria-live="polite"></p>
           <p class="microcopy">Оплата не переключается автоматически. При нехватке выбранной валюты попытка не начнётся. Пропуск анимации не меняет результат.</p>
@@ -62,7 +64,7 @@
         <section class="panel receipt-panel" aria-labelledby="receipt-title"><span class="kicker">06 / ТРАНЗАКЦИЯ</span><h2 id="receipt-title">Последний сбор</h2><div id="receipt"></div></section>
       </div>
 
-      <details class="qa-panel"><summary><span>🧪 Тестовая панель</span><span>ОТКРЫТЬ НАСТРОЙКИ</span></summary><div class="qa-content"><p>Только для проверки прототипа. Добавление ресурсов, установка фрагментов и принудительный результат — тестовые вмешательства.</p><div class="qa-actions"><button id="add-crystals" type="button">+10 000 TEST-кристаллов</button><button id="add-tickets" type="button">+10 билетов</button><button id="set-98" type="button">Установить 98 фрагментов</button></div><div class="qa-force"><span>ПРИНУДИТЕЛЬНО СЛЕДУЮЩИЙ ВЫИГРЫШ</span><div><button data-force="2" type="button">+2</button><button data-force="5" type="button">+5</button><button data-force="20" type="button">+20</button></div><small id="force-status">Не задан · реальные шансы действуют</small></div><div class="qa-restart"><label for="restart-mode">РЕЖИМ ПРИ ПЕРЕЗАПУСКЕ</label><select id="restart-mode"><option value="repeatable">A · Повторяемый</option><option value="permanent">B · Одноразовый до перезапуска теста</option></select><button id="restart" type="button">Начать заново в выбранном режиме</button></div></div></details>
+      <details class="qa-panel"><summary><span>🧪 Посмотреть сценарий</span><span>ОТКРЫТЬ НАСТРОЙКИ</span></summary><div class="qa-content"><p>Только для проверки прототипа. Добавление ресурсов, установка фрагментов и принудительный результат — тестовые вмешательства.</p><div class="qa-actions"><button id="scenario-ordinary" type="button">Обычная прибавка +2</button><button id="scenario-big" type="button">Большая прибавка +20</button><button id="scenario-threshold" type="button">Достижение порога</button><button id="scenario-assembly" type="button">Сборка с остатком</button></div><small id="force-status">Не задан · реальные шансы действуют</small><div class="qa-restart"><label for="restart-mode">РЕЖИМ ПРИ ПЕРЕЗАПУСКЕ</label><select id="restart-mode"><option value="repeatable">A · Повторяемый</option><option value="permanent">B · Одноразовый до перезапуска теста</option></select><button id="restart" type="button">Начать заново в выбранном режиме</button><button id="reset-demo" type="button">Начать демо заново</button></div></div></details>
     </main>
     <footer>CRAFTIX / СЛУЧАЙНЫЕ ФРАГМЕНТЫ <span>ДЕМО · ДАННЫЕ ТОЛЬКО В ЭТОМ БРАУЗЕРЕ</span></footer>
   </div>

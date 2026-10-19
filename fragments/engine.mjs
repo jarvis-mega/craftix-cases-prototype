@@ -11,7 +11,7 @@ export function freshState(mode = 'repeatable') {
     version: 1, mode, payment: 'crystals', crystals: 1500, tickets: 3,
     fragments: 0, g: 0, d: 0, closed: false,
     attempts: 0, crystalsSpent: 0, ticketsUsed: 0,
-    history: [], collections: [], forcedGain: null, lastGain: null,
+    history: [], collections: [], forcedGain: null, lastGain: null, demoPrepared: null,
   };
 }
 
@@ -80,6 +80,7 @@ export function attempt(s, rng = Math.random) {
       crystalsSpent: s.crystalsSpent + (s.payment === 'crystals' ? PRICE : 0),
       ticketsUsed: s.ticketsUsed + (s.payment === 'ticket' ? 1 : 0),
       history: [...s.history, entry], forcedGain: null, lastGain: gain,
+      demoPrepared: s.demoPrepared === 'threshold' ? 'threshold' : null,
     }, error: null, gain,
   };
 }
@@ -91,12 +92,12 @@ export function collect(s, id) {
   if (s.fragments < TARGET) return { state: s, error: 'not-ready' };
   const leftover = s.fragments - TARGET;
   const converted = s.mode === 'permanent' ? leftover : 0;
-  const receipt = { id, before: s.fragments, leftover, converted };
+  const receipt = { id, before: s.fragments, leftover, converted, demo: Boolean(s.demoPrepared) };
   return {
     state: {
       ...s, fragments: s.mode === 'permanent' ? 0 : leftover,
       g: s.g + 1, d: s.d + converted, closed: s.mode === 'permanent',
-      collections: [...s.collections, receipt], lastGain: null,
+      collections: [...s.collections, receipt], lastGain: null, demoPrepared: null,
     }, error: null, receipt,
   };
 }
@@ -106,9 +107,10 @@ export function selectPayment(s, payment) {
   return { ...s, payment };
 }
 
-export function addResources(s, kind) {
-  if (kind === 'crystals') return { ...s, crystals: s.crystals + 10000 };
-  if (kind === 'tickets') return { ...s, tickets: s.tickets + 10 };
+export function addResources(s, kind, amount = kind === 'crystals' ? 10000 : 10) {
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new RangeError('Invalid test amount');
+  if (kind === 'crystals') return { ...s, crystals: s.crystals + amount };
+  if (kind === 'tickets') return { ...s, tickets: s.tickets + amount };
   return s;
 }
 

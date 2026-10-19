@@ -76,8 +76,9 @@ export function resumeSet(state) {
   return { ...state, paused: false };
 }
 
-export function addCrystals(state) {
-  return { ...state, balance: state.balance + 10000 };
+export function addCrystals(state, amount = 10000) {
+  if (!Number.isSafeInteger(amount) || amount <= 0 || !Number.isSafeInteger(state.balance + amount)) throw new RangeError('Invalid test amount');
+  return { ...state, balance: state.balance + amount };
 }
 
 export function setDraftMode(state, draftMode) {

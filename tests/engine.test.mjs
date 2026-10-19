@@ -136,3 +136,16 @@ test('corrupt nested persisted result is ignored safely on load', () => {
   storage.setItem(STORAGE_KEY, JSON.stringify(broken));
   assert.deepEqual(loadState(storage), initialState());
 });
+
+test('demo funding sizes preserve case progress and selected result is marked once', () => {
+  const base = setTestPity(initialState());
+  const funded = grantTestResource(grantTestResource(base, 'crystals', 1000), 'tickets', 10);
+  assert.equal(funded.crystals, 3500);
+  assert.equal(funded.tickets, 13);
+  assert.equal(funded.pity, 79);
+  const opening = openCase(funded, { count: 1, payment: 'crystals' });
+  assert.equal(opening.result.entries[0].source, 'guarantee');
+  assert.equal(opening.result.demoScenario, 'guarantee');
+  assert.equal(opening.state.demoPrepared, null);
+  assert.equal(opening.state.crystals, 3400);
+});

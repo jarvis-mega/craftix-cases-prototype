@@ -1,12 +1,13 @@
+import { createTopUp } from '../demo-ui.mjs';
 import {
   PRIZES, COSTS, createState, loadState, saveState, beginSpin, revealSpin,
   nextCost, remainingTotal, probabilities, pauseSet, resumeSet,
-  addCrystals, setDraftMode, newDemoSet,
+  addCrystals,
 } from './engine.js';
 
 const $ = id => document.getElementById(id);
 const format = value => new Intl.NumberFormat('ru-RU').format(value);
-const labels = { random: '', 'g-first': 'ТЕСТ: G ПЕРВЫМ', 'g-last': 'ТЕСТ: G ПОСЛЕДНИМ' };
+const labels = { random: '', 'g-first': 'ДЕМО: G ПЕРВЫМ', 'g-last': 'ДЕМО: G ПОСЛЕДНИМ' };
 const colors = { R1: '#d44d5b', R2: '#b72f44', R3: '#ed7280', G: '#e5ae45' };
 let state = loadState(localStorage);
 let animationToken = 0;
@@ -59,7 +60,7 @@ function renderWheel() {
     const percent = items.length === 3 ? '33⅓%' : `${Math.round(odds[id] * 100)}%`;
     return `<span class="sector-label" style="transform:translate(-50%,-50%) rotate(${angle}deg) translateY(calc(var(--wheel-size) * -.31)) rotate(${-angle}deg)"><b>${id}</b><small>${percent}</small></span>`;
   }).join('');
-  disc.setAttribute('aria-label', `Активные сектора: ${items.join(', ')}. Каждый имеет равную вероятность.`);
+  disc.setAttribute('aria-label', `Активные сектора: ${items.map(id => PRIZES.find(prize => prize.id === id).name).join(', ')}. Каждый имеет равную вероятность.`);
 }
 
 function prizeCard(prize) {
@@ -67,7 +68,7 @@ function prizeCard(prize) {
   const index = state.won.indexOf(prize.id);
   const odds = probabilities(state)[prize.id];
   const probability = state.remaining.length === 3 ? '33⅓%' : `${Math.round((odds || 0) * 100)}%`;
-  return `<article class="prize-card ${prize.id === 'G' ? 'grand' : ''} ${isWon ? 'is-won' : ''}">
+  return `<article class="prize-card ${prize.id === 'G' ? 'grand' : ''} ${isWon ? 'is-won' : ''} ${isWon && prize.id === lastWin ? 'new-win' : ''}">
     <div class="card-top"><span class="card-id">${prize.id}</span><span class="card-status">${isWon ? '✓ ПОЛУЧЕНО' : 'В НАБОРЕ'}</span></div>
     <div class="cube-wrap">${cube(prize.id === 'G')}</div>
     <div class="card-bottom"><div><span class="card-type">${prize.type}</span><h3>${prize.name}</h3></div><span class="card-odds">${isWon ? `ХОД ${index + 1}` : probability}</span></div>
@@ -77,7 +78,7 @@ function prizeCard(prize) {
 function render() {
   $('balance').textContent = format(state.balance);
   $('mode-badge').hidden = state.mode === 'random';
-  $('mode-badge').textContent = labels[state.mode];
+  $('mode-badge').textContent = state.demoScenario === 'last' ? 'ДЕМО: ФИНАЛ НАБОРА' : labels[state.mode];
   document.querySelector('.eyebrow').firstChild.nextSibling.textContent = ` НАБОР / ${String(state.cycle).padStart(3, '0')} `;
   $('wheel-count').textContent = `${state.remaining.length} В ИГРЕ`;
   $('collection-counter').textContent = `${state.won.length} / 4 СОБРАНО`;
@@ -94,7 +95,6 @@ function render() {
   $('spent').textContent = format(state.spent);
   $('remaining-total').textContent = format(remainingTotal(state));
   $('next-price').textContent = state.pending ? '—' : nextCost(state) ? format(nextCost(state)) : '—';
-  $('scenario').value = state.draftMode;
   const hasGrand = state.won.includes('G');
   const complete = state.won.length === PRIZES.length;
   const banner = $('win-banner');
@@ -129,11 +129,13 @@ function render() {
     buttonCost.hidden = false;
     buttonCost.innerHTML = `<span class="crystal-icon">◆</span> ${format(nextCost(state))}`;
   }
-  button.disabled = complete || !!state.pending || (!state.paused && state.balance < nextCost(state));
+  button.disabled = complete || !!state.pending;
+  $('fund-demo').disabled = !!state.pending;
+  $('fund-demo').hidden = state.balance >= nextCost(state) || complete || state.paused;
   $('status').textContent = notice || (complete ? 'Набор завершён · Новое вращение недоступно' : state.pending ? 'Результат уже определён. Можно пропустить анимацию.' : state.paused ? 'Набор сохранён. Возвращайтесь когда захотите.' : state.balance < nextCost(state) ? 'Недостаточно кристаллов для следующего вращения.' : 'Один приз за вращение · Без повторов');
-  $('new-set').disabled = !!state.pending;
-  $('add-crystals').disabled = !!state.pending;
-  $('scenario').disabled = !!state.pending;
+  ['scenario-new', 'scenario-grand-first', 'scenario-last', 'animation-speed', 'fund-header'].forEach(id => { $(id).disabled = !!state.pending; });
+  $('open-funding').disabled = !!state.pending;
+  $('reset-demo').disabled = !!state.pending;
   renderWheel();
 }
 
@@ -142,6 +144,7 @@ function finishSpin(token) {
   const id = state.pending.prizeId;
   if (!commit(revealSpin(state))) return;
   animating = false;
+  ++animationToken; // invalidate a queued frame after Skip
   lastWin = id;
   notice = '';
   const disc = $('wheel-disc');
@@ -160,9 +163,9 @@ function animatePending() {
   const disc = $('wheel-disc');
   disc.style.transition = 'none';
   disc.style.transform = 'rotate(0deg)';
-  const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : 3600;
+  const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : $('animation-speed').value === 'fast' ? 1000 : 3600;
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (token !== animationToken) return;
+    if (token !== animationToken || !state.pending) return;
     disc.style.transition = `transform ${duration}ms cubic-bezier(.12,.72,.12,1)`;
     disc.style.transform = `rotate(${2160 + target}deg)`;
   }));
@@ -178,6 +181,7 @@ $('spin-button').addEventListener('click', () => {
   if (result.error) {
     notice = result.error === 'insufficient-funds' ? 'Недостаточно кристаллов для вращения.' : 'Вращение сейчас недоступно.';
     render();
+    if (result.error === 'insufficient-funds') topUp.open();
     return;
   }
   if (commit(result.state)) {
@@ -194,22 +198,38 @@ $('skip-button').addEventListener('click', () => {
 $('stop-button').addEventListener('click', () => {
   if (commit(pauseSet(state))) { notice = ''; render(); }
 });
-$('add-crystals').addEventListener('click', () => {
+const topUp = createTopUp({ tickets: false, getBalance: () => ({ crystals: state.balance }), onGrant: (kind, amount) => {
+  if (state.pending || kind !== 'crystals') return false;
+  if (!commit(addCrystals(state, amount))) return false;
+  notice = `${format(amount)} демо-кристаллов добавлено.`; render(); return true;
+} });
+$('fund-demo').addEventListener('click', () => topUp.open());
+$('fund-header').addEventListener('click', () => topUp.open());
+$('open-funding').addEventListener('click', () => topUp.open());
+function prepareSet(mode, scenario) {
   if (state.pending) return;
-  if (commit(addCrystals(state))) { notice = '10 000 демо-кристаллов добавлено.'; render(); }
-});
-$('scenario').addEventListener('change', event => {
-  if (state.pending) return;
-  if (commit(setDraftMode(state, event.target.value))) render();
-});
-$('new-set').addEventListener('click', () => {
-  if (state.pending) return;
-  if (commit(newDemoSet(state))) {
-    lastWin = null;
-    notice = 'Новый демо-набор создан.';
-    render();
+  const next = createState({ cycle: state.cycle + 1, mode, draftMode: mode });
+  if (scenario === 'last') {
+    next.won = ['R1', 'R2', 'R3'];
+    next.remaining = ['G'];
+    next.balance = 800;
+    next.spent = 700;
   }
+  next.demoScenario = scenario;
+  if (commit(next)) { lastWin = null; notice = `ДЕМО подготовлено: ${scenario === 'last' ? 'нажмите основную кнопку для финала' : 'нажмите «Крутить рулетку»'}.`; render(); }
+}
+$('scenario-new').addEventListener('click', () => prepareSet('random', 'new'));
+$('scenario-grand-first').addEventListener('click', () => prepareSet('g-first', 'first'));
+$('scenario-last').addEventListener('click', () => prepareSet('g-last', 'last'));
+$('reset-demo').addEventListener('click', () => {
+  if (state.pending) return;
+  try { localStorage.removeItem('craftix-finite-roulette-v1'); state = createState(); lastWin = null; notice = 'Демо сброшено.'; topUp.close(); render(); }
+  catch { notice = 'Не удалось сбросить демо.'; render(); }
 });
 
+if (state.pending) {
+  // The charge and selected result were committed before the old page unloaded.
+  const recovered = revealSpin(state);
+  if (commit(recovered)) { lastWin = recovered.won.at(-1); notice = 'Сохранённый результат показан после перезагрузки.'; }
+}
 render();
-if (state.pending) animatePending();
